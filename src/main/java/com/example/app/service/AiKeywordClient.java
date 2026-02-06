@@ -1,55 +1,102 @@
 package com.example.app.service;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Set;
+import java.util.regex.Pattern;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 @Component
 public class AiKeywordClient {
 
     private final RestClient restClient;
     private final String baseUrl;
+    private final boolean enabled;
+    private static final int MAX_KEYWORDS = 5;
+    private static final Pattern TOKEN_SPLIT = Pattern.compile("[^\\p{L}\\p{Nd}]+");
+    private static final Set<String> STOPWORDS = Set.of(
+            "the", "a", "an", "and", "or", "is", "are", "to", "of", "in", "on", "for",
+            "with", "at", "from", "by", "this", "that", "it", "as", "be"
+    );
 
     public AiKeywordClient(@Value("${ai.base-url:}") String baseUrl) {
         this.baseUrl = baseUrl;
+        this.enabled = baseUrl != null && !baseUrl.isBlank();
         this.restClient = RestClient.builder()
                 .baseUrl(baseUrl)
                 .build();
     }
 
     public List<String> extractKeywords(String text) {
-        if (baseUrl == null || baseUrl.isBlank()) {
-            throw new IllegalStateException("AI base URL is not configured");
+        if (!enabled) {
+            return fallbackKeywords(text);
         }
-        AiKeywordResponse response = restClient.post()
-                .uri("/analyze")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(new AiKeywordRequest(text))
-                .retrieve()
-                .body(AiKeywordResponse.class);
-        if (response == null || response.getKeywords() == null) {
-            return List.of();
+        try {
+            AiKeywordResponse response = restClient.post()
+                    .uri("/analyze")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new AiKeywordRequest(text))
+                    .retrieve()
+                    .body(AiKeywordResponse.class);
+            if (response == null || response.getKeywords() == null) {
+                return fallbackKeywords(text);
+            }
+            return response.getKeywords();
+        } catch (RestClientException ex) {
+            return fallbackKeywords(text);
         }
-        return response.getKeywords();
     }
 
     public List<AiMentorScore> recommendMentors(List<String> keywords) {
-        if (baseUrl == null || baseUrl.isBlank()) {
-            throw new IllegalStateException("AI base URL is not configured");
-        }
-        AiRecommendResponse response = restClient.post()
-                .uri("/recommend")
-                .contentType(MediaType.APPLICATION_JSON)
-                .body(new AiRecommendRequest(keywords))
-                .retrieve()
-                .body(AiRecommendResponse.class);
-        if (response == null || response.getTop5() == null) {
+        if (!enabled) {
             return List.of();
         }
-        return response.getTop5();
+        try {
+            AiRecommendResponse response = restClient.post()
+                    .uri("/recommend")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body(new AiRecommendRequest(keywords))
+                    .retrieve()
+                    .body(AiRecommendResponse.class);
+            if (response == null || response.getTop5() == null) {
+                return List.of();
+            }
+            return response.getTop5();
+        } catch (RestClientException ex) {
+            return List.of();
+        }
+    }
+
+    private List<String> fallbackKeywords(String text) {
+        if (text == null || text.isBlank()) {
+            return List.of("mentoring", "backend", "spring", "api", "career");
+        }
+        String[] tokens = TOKEN_SPLIT.split(text);
+        Set<String> unique = new LinkedHashSet<>();
+        for (String raw : tokens) {
+            if (raw == null) {
+                continue;
+            }
+            String token = raw.trim().toLowerCase(Locale.ROOT);
+            if (token.length() < 2 || STOPWORDS.contains(token)) {
+                continue;
+            }
+            unique.add(raw.trim());
+            if (unique.size() >= MAX_KEYWORDS) {
+                break;
+            }
+        }
+        if (unique.isEmpty()) {
+            return List.of("mentoring", "backend", "spring", "api", "career");
+        }
+        return new ArrayList<>(unique);
     }
 
     private static class AiKeywordRequest {

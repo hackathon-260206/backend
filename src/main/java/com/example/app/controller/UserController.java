@@ -13,12 +13,12 @@ import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
 @RequestMapping("/api/users")
@@ -54,9 +54,13 @@ public class UserController {
         return userService.findAll();
     }
 
-    @GetMapping("/{id}")
-    public UserResponse findById(@PathVariable Long id) {
-        return userService.findById(id);
+    @GetMapping("/me")
+    public UserResponse me(HttpSession session) {
+        Object sessionUserId = session.getAttribute("USER_ID");
+        if (!(sessionUserId instanceof Long)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Login required");
+        }
+        return userService.findById((Long) sessionUserId);
     }
 
     @GetMapping("/session")
@@ -68,8 +72,12 @@ public class UserController {
         return new SessionStatusResponse(false, null);
     }
 
-    @GetMapping("/{id}/profile")
-    public com.example.app.dto.UserProfileResponse getUserProfile(@PathVariable Long id) {
-        return userService.getUserProfile(id);
+    @GetMapping("/me/profile")
+    public com.example.app.dto.UserProfileResponse getMyProfile(HttpSession session) {
+        Object sessionUserId = session.getAttribute("USER_ID");
+        if (!(sessionUserId instanceof Long)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Login required");
+        }
+        return userService.getUserProfile((Long) sessionUserId);
     }
 }

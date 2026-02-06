@@ -6,6 +6,7 @@ import com.example.app.entity.MenteeProfile;
 import com.example.app.entity.User;
 import com.example.app.repository.MenteeProfileRepository;
 import com.example.app.repository.UserRepository;
+import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +15,9 @@ public class MenteeService {
 
     private final MenteeProfileRepository menteeProfileRepository;
     private final UserRepository userRepository;
+    private static final List<String> DUMMY_KEYWORDS = List.of(
+            "backend", "spring", "api", "career", "mentoring"
+    );
 
     public MenteeService(MenteeProfileRepository menteeProfileRepository, UserRepository userRepository) {
         this.menteeProfileRepository = menteeProfileRepository;
@@ -38,7 +42,9 @@ public class MenteeService {
         return new MenteeProfileCreateResponse(
                 savedProfile.getUserId(),
                 savedProfile.getUser().getId(),
-                "멘티 프로필 생성이 되었습니다."
+                "硫섑떚 ?꾨줈???앹꽦???섏뿀?듬땲??",
+                DUMMY_KEYWORDS
         );
     }
 }
+

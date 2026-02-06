@@ -27,16 +27,13 @@ public class MentorRecommendationService {
     private final KeywordMappingRepository keywordMappingRepository;
     private final MentorProfileRepository mentorProfileRepository;
     private final UserRepository userRepository;
-    private final AiKeywordClient aiKeywordClient;
 
     public MentorRecommendationService(KeywordMappingRepository keywordMappingRepository,
                                        MentorProfileRepository mentorProfileRepository,
-                                       UserRepository userRepository,
-                                       AiKeywordClient aiKeywordClient) {
+                                       UserRepository userRepository) {
         this.keywordMappingRepository = keywordMappingRepository;
         this.mentorProfileRepository = mentorProfileRepository;
         this.userRepository = userRepository;
-        this.aiKeywordClient = aiKeywordClient;
     }
 
     @Transactional(readOnly = true)
@@ -56,25 +53,29 @@ public class MentorRecommendationService {
                 .collect(Collectors.toList());
 
         if (keywords.isEmpty()) {
-            return new MentorRecommendationResponse(List.of());
+            return new MentorRecommendationResponse(buildFallbackRecommendations());
         }
 
-        List<AiKeywordClient.AiMentorScore> aiResults = new ArrayList<>(aiKeywordClient.recommendMentors(keywords));
-        aiResults.sort(Comparator.comparing(AiKeywordClient.AiMentorScore::getTotalScore,
-                Comparator.nullsLast(Comparator.reverseOrder())));
+        // AI 연동 중단: 보유 데이터 기준으로 추천
+        return new MentorRecommendationResponse(buildFallbackRecommendations());
+    }
 
-        List<Long> mentorIds = aiResults.stream()
-                .map(AiKeywordClient.AiMentorScore::getMentorId)
+    private List<MentorRecommendationItem> buildFallbackRecommendations() {
+        List<MentorProfile> profiles = new ArrayList<>(mentorProfileRepository.findAll());
+        if (profiles.isEmpty()) {
+            return List.of();
+        }
+        profiles.sort(Comparator.comparing(MentorProfile::getUserId,
+                Comparator.nullsLast(Comparator.naturalOrder())));
+        if (profiles.size() > 5) {
+            profiles = profiles.subList(0, 5);
+        }
+
+        List<Long> mentorIds = profiles.stream()
+                .map(MentorProfile::getUserId)
                 .filter(Objects::nonNull)
                 .distinct()
                 .collect(Collectors.toList());
-
-        Map<Long, MentorProfile> profileMap = new HashMap<>();
-        if (!mentorIds.isEmpty()) {
-            for (MentorProfile profile : mentorProfileRepository.findByUserIdIn(mentorIds)) {
-                profileMap.put(profile.getUserId(), profile);
-            }
-        }
 
         Map<Long, User> userMap = new HashMap<>();
         if (!mentorIds.isEmpty()) {
@@ -84,28 +85,22 @@ public class MentorRecommendationService {
         }
 
         List<MentorRecommendationItem> items = new ArrayList<>();
-        for (AiKeywordClient.AiMentorScore score : aiResults) {
-            Long mentorId = score.getMentorId();
+        for (MentorProfile profile : profiles) {
+            Long mentorId = profile.getUserId();
             if (mentorId == null) {
                 continue;
             }
-            MentorProfile profile = profileMap.get(mentorId);
             User mentorUser = userMap.get(mentorId);
-
-            String mentorName = mentorUser != null ? mentorUser.getName() : score.getMentorName();
+            String mentorName = mentorUser != null ? mentorUser.getName() : "Mentor " + mentorId;
             items.add(new MentorRecommendationItem(
                     mentorId,
                     mentorName,
-                    profile != null ? profile.getPrice() : null,
-                    profile != null ? profile.getCompany() : null,
-                    profile != null ? profile.getGithubUrl() : null
+                    profile.getPrice(),
+                    profile.getCompany(),
+                    profile.getGithubUrl()
             ));
         }
 
-        if (items.size() > 5) {
-            items = items.subList(0, 5);
-        }
-
-        return new MentorRecommendationResponse(items);
+        return items;
     }
 }

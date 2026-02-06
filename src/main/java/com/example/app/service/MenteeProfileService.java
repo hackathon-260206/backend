@@ -21,18 +21,18 @@ public class MenteeProfileService {
     private final UserRepository userRepository;
     private final KeywordRepository keywordRepository;
     private final KeywordMappingRepository keywordMappingRepository;
-    private final AiKeywordClient aiKeywordClient;
+    private static final List<String> DUMMY_KEYWORDS = List.of(
+            "backend", "spring", "api", "career", "mentoring"
+    );
 
     public MenteeProfileService(MenteeProfileRepository menteeProfileRepository,
                                 UserRepository userRepository,
                                 KeywordRepository keywordRepository,
-                                KeywordMappingRepository keywordMappingRepository,
-                                AiKeywordClient aiKeywordClient) {
+                                KeywordMappingRepository keywordMappingRepository) {
         this.menteeProfileRepository = menteeProfileRepository;
         this.userRepository = userRepository;
         this.keywordRepository = keywordRepository;
         this.keywordMappingRepository = keywordMappingRepository;
-        this.aiKeywordClient = aiKeywordClient;
     }
 
     @Transactional
@@ -48,9 +48,9 @@ public class MenteeProfileService {
 
         MenteeProfile saved = menteeProfileRepository.save(profile);
 
-        List<String> keywords = aiKeywordClient.extractKeywords(portfolioText);
+        // AI 연동 중단: 더미 키워드로 대체
         int added = 0;
-        for (String keywordText : keywords) {
+        for (String keywordText : DUMMY_KEYWORDS) {
             if (keywordText == null) {
                 continue;
             }
@@ -71,7 +71,12 @@ public class MenteeProfileService {
             }
         }
 
-        return new MenteeProfileCreateResponse(saved.getUserId(), saved.getUserId(), "Portfolio submitted.");
+        return new MenteeProfileCreateResponse(
+                saved.getUserId(),
+                saved.getUserId(),
+                "Portfolio submitted.",
+                DUMMY_KEYWORDS
+        );
     }
 }
 
