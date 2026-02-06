@@ -1,5 +1,6 @@
 server:
   port: 8080
+  address: 0.0.0.0
 
 spring:
   config:
@@ -23,3 +24,6 @@ spring:
 logging:
   level:
     org.hibernate.SQL: debug
+
+ai:
+  base-url: ${AI_BASE_URL:}
