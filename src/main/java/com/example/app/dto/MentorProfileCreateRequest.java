@@ -2,15 +2,20 @@ package com.example.app.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.PositiveOrZero;
 
-public class MenteeProfileCreateRequest {
+public class MentorProfileCreateRequest {
 
     @NotNull
     @JsonProperty("tech_stack")
     private String techStack;
 
     @NotNull
-    private String university;
+    @PositiveOrZero
+    private Integer price;
+
+    @NotNull
+    private String company;
 
     @JsonProperty("github_url")
     private String githubUrl;
@@ -23,12 +28,20 @@ public class MenteeProfileCreateRequest {
         this.techStack = techStack;
     }
 
-    public String getUniversity() {
-        return university;
+    public Integer getPrice() {
+        return price;
     }
 
-    public void setUniversity(String university) {
-        this.university = university;
+    public void setPrice(Integer price) {
+        this.price = price;
+    }
+
+    public String getCompany() {
+        return company;
+    }
+
+    public void setCompany(String company) {
+        this.company = company;
     }
 
     public String getGithubUrl() {

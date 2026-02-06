@@ -67,4 +67,9 @@ public class UserController {
         }
         return new SessionStatusResponse(false, null);
     }
+
+    @GetMapping("/{id}/profile")
+    public com.example.app.dto.UserProfileResponse getUserProfile(@PathVariable Long id) {
+        return userService.getUserProfile(id);
+    }
 }

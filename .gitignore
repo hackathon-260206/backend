@@ -27,3 +27,7 @@ Thumbs.db
 
 # Test reports
 /test-output/
+
+# Docker
+Dockerfile
+docker-compose.yml
