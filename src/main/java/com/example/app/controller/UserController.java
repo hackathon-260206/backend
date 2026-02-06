@@ -1,9 +1,15 @@
 package com.example.app.controller;
 
+import com.example.app.dto.UserLoginRequest;
+import com.example.app.dto.UserLoginResponse;
+import com.example.app.dto.UserLogoutRequest;
+import com.example.app.dto.UserLogoutResponse;
 import com.example.app.dto.UserResponse;
 import com.example.app.dto.UserSignupRequest;
 import com.example.app.dto.UserSignupResponse;
+import com.example.app.dto.SessionStatusResponse;
 import com.example.app.service.UserService;
+import jakarta.servlet.http.HttpSession;
 import jakarta.validation.Valid;
 import java.util.List;
 import org.springframework.http.HttpStatus;
@@ -31,6 +37,19 @@ public class UserController {
         return userService.signup(request);
     }
 
+    @PostMapping("/login")
+    public UserLoginResponse login(@Valid @RequestBody UserLoginRequest request, HttpSession session) {
+        UserLoginResponse response = userService.login(request);
+        session.setAttribute("USER_ID", response.getId());
+        return response;
+    }
+
+    @PostMapping("/logout")
+    public UserLogoutResponse logout(@Valid @RequestBody UserLogoutRequest request, HttpSession session) {
+        session.invalidate();
+        return new UserLogoutResponse("로그아웃 되었습니다.");
+    }
+
     @GetMapping
     public List<UserResponse> findAll() {
         return userService.findAll();
@@ -39,5 +58,14 @@ public class UserController {
     @GetMapping("/{id}")
     public UserResponse findById(@PathVariable Long id) {
         return userService.findById(id);
+    }
+
+    @GetMapping("/session")
+    public SessionStatusResponse sessionStatus(HttpSession session) {
+        Object sessionUserId = session.getAttribute("USER_ID");
+        if (sessionUserId instanceof Long) {
+            return new SessionStatusResponse(true, (Long) sessionUserId);
+        }
+        return new SessionStatusResponse(false, null);
     }
 }

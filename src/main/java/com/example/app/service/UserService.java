@@ -1,9 +1,13 @@
 package com.example.app.service;
 
 import com.example.app.dto.UserResponse;
+import com.example.app.dto.UserLoginRequest;
+import com.example.app.dto.UserLoginResponse;
 import com.example.app.dto.UserSignupRequest;
 import com.example.app.dto.UserSignupResponse;
 import com.example.app.entity.User;
+import com.example.app.exception.NotFoundException;
+import com.example.app.exception.UnauthorizedException;
 import com.example.app.repository.UserRepository;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -41,6 +45,16 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
+    public UserLoginResponse login(UserLoginRequest request) {
+        User user = userRepository.findByEmail(request.getEmail())
+                .orElseThrow(() -> new UnauthorizedException("Invalid credentials"));
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new UnauthorizedException("Invalid credentials");
+        }
+        return new UserLoginResponse(user.getId(), user.getEmail(), user.getName(), user.getRole());
+    }
+
+    @Transactional(readOnly = true)
     public List<UserResponse> findAll() {
         return userRepository.findAll()
                 .stream()
@@ -51,7 +65,7 @@ public class UserService {
     @Transactional(readOnly = true)
     public UserResponse findById(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("User not found: " + id));
+                .orElseThrow(() -> new NotFoundException("User not found: " + id));
         return toResponse(user);
     }
 

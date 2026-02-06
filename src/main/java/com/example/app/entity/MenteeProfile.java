@@ -33,6 +33,10 @@ public class MenteeProfile {
     @Column(length = 512)
     private String portfolioUrl;
 
+    @Lob
+    @Column(name = "portfolio_text")
+    private String portfolioText;
+
     @Column(length = 512)
     private String githubUrl;
 
@@ -44,6 +48,7 @@ public class MenteeProfile {
         this.techStack = techStack;
         this.university = university;
         this.portfolioUrl = portfolioUrl;
+        this.portfolioText = null;
         this.githubUrl = githubUrl;
     }
 
@@ -67,6 +72,10 @@ public class MenteeProfile {
         return portfolioUrl;
     }
 
+    public String getPortfolioText() {
+        return portfolioText;
+    }
+
     public String getGithubUrl() {
         return githubUrl;
     }
@@ -85,6 +94,10 @@ public class MenteeProfile {
 
     public void setPortfolioUrl(String portfolioUrl) {
         this.portfolioUrl = portfolioUrl;
+    }
+
+    public void setPortfolioText(String portfolioText) {
+        this.portfolioText = portfolioText;
     }
 
     public void setGithubUrl(String githubUrl) {
