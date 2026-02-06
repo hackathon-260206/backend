@@ -3,7 +3,7 @@ server:
 
 spring:
   config:
-    import: optional:dotenv:.
+    import: optional:file:.env[.properties]
   datasource:
     url: ${DB_URL}
     username: ${DB_USER}

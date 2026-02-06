@@ -1,7 +1,8 @@
 package com.example.app.controller;
 
-import com.example.app.dto.UserCreateRequest;
 import com.example.app.dto.UserResponse;
+import com.example.app.dto.UserSignupRequest;
+import com.example.app.dto.UserSignupResponse;
 import com.example.app.service.UserService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -24,10 +25,10 @@ public class UserController {
         this.userService = userService;
     }
 
-    @PostMapping
+    @PostMapping("/signup")
     @ResponseStatus(HttpStatus.CREATED)
-    public UserResponse create(@Valid @RequestBody UserCreateRequest request) {
-        return userService.create(request);
+    public UserSignupResponse signup(@Valid @RequestBody UserSignupRequest request) {
+        return userService.signup(request);
     }
 
     @GetMapping
