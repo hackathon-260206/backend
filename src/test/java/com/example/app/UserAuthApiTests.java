@@ -68,16 +68,9 @@ class UserAuthApiTests {
                 .andExpect(jsonPath("$.role").value("MENTEE"))
                 .andReturn();
 
-        String logoutJson = """
-            {
-              "id": 1
-            }
-            """;
-
         mockMvc.perform(
                         MockMvcRequestBuilders.post("/api/users/logout")
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .content(logoutJson)
                                 .session(loginResult.getRequest().getSession(false))
                 )
                 .andExpect(status().isOk())

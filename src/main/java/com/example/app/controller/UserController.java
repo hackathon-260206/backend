@@ -2,7 +2,6 @@ package com.example.app.controller;
 
 import com.example.app.dto.UserLoginRequest;
 import com.example.app.dto.UserLoginResponse;
-import com.example.app.dto.UserLogoutRequest;
 import com.example.app.dto.UserLogoutResponse;
 import com.example.app.dto.UserResponse;
 import com.example.app.dto.UserSignupRequest;
@@ -45,7 +44,7 @@ public class UserController {
     }
 
     @PostMapping("/logout")
-    public UserLogoutResponse logout(@Valid @RequestBody UserLogoutRequest request, HttpSession session) {
+    public UserLogoutResponse logout(HttpSession session) {
         session.invalidate();
         return new UserLogoutResponse("로그아웃 되었습니다.");
     }

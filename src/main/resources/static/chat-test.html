@@ -1,0 +1,84 @@
+﻿<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Chat WS Test</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; }
+    input, button { padding: 8px; margin: 4px 0; width: 100%; max-width: 420px; }
+    pre { background: #111; color: #0f0; padding: 12px; height: 240px; overflow: auto; }
+  </style>
+</head>
+<body>
+  <h2>WebSocket Chat Test</h2>
+  <p>로그인 후 이 페이지를 열어야 세션 쿠키가 포함됩니다.</p>
+
+  <label>내 userId (세션)</label>
+  <input id="myId" type="number" placeholder="로그인 필요" disabled />
+
+  <label>상대 userId</label>
+  <input id="partnerId" type="number" placeholder="예: 12" />
+
+  <label>메시지</label>
+  <input id="content" type="text" placeholder="안녕하세요" />
+
+  <button id="connect">Connect</button>
+  <button id="send">Send</button>
+  <button id="read">Mark Read</button>
+
+  <h3>Logs</h3>
+  <pre id="log"></pre>
+
+  <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+  <script>
+    let client;
+    const log = (msg) => {
+      const el = document.getElementById('log');
+      el.textContent += msg + '\n';
+      el.scrollTop = el.scrollHeight;
+    };
+
+    async function loadSessionUser() {
+      try {
+        const res = await fetch('/api/users/session');
+        if (!res.ok) return;
+        const data = await res.json();
+        if (data.logged_in) {
+          document.getElementById('myId').value = data.user_id;
+        }
+      } catch (e) {
+        log('session fetch error');
+      }
+    }
+
+    document.getElementById('connect').onclick = () => {
+      const myId = document.getElementById('myId').value;
+      if (!myId) { alert('로그인 후 페이지를 새로고침하세요'); return; }
+      const socket = new SockJS('/ws');
+      client = Stomp.over(socket);
+      client.connect({}, () => {
+        log('connected');
+        client.subscribe(`/topic/chat/${myId}`, (msg) => log('MSG ' + msg.body));
+        client.subscribe(`/topic/chat.read/${myId}`, (msg) => log('READ ' + msg.body));
+      }, (err) => log('error ' + err));
+    };
+
+    document.getElementById('send').onclick = () => {
+      if (!client) { alert('먼저 connect'); return; }
+      const receiverId = Number(document.getElementById('partnerId').value);
+      const content = document.getElementById('content').value;
+      client.send('/app/chat.send', {}, JSON.stringify({ receiver_id: receiverId, content }));
+    };
+
+    document.getElementById('read').onclick = () => {
+      if (!client) { alert('먼저 connect'); return; }
+      const partnerId = Number(document.getElementById('partnerId').value);
+      client.send('/app/chat.read', {}, JSON.stringify({ partner_id: partnerId }));
+    };
+
+    loadSessionUser();
+  </script>
+</body>
+</html>
